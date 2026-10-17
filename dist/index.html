@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#fff9ef" />
+    <meta name="color-scheme" content="light" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="description" content="转一转，刮开一份只给你的惊喜。好运归你，兑现归我。" />
+    <meta property="og:title" content="今天也偏爱你 · 宝宝的专属好运" />
+    <meta property="og:description" content="小小的好运，已经为你准备好了。转一转，亲手刮开一份小小的偏爱。" />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>今天也偏爱你 · 宝宝的专属好运</title>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z"/></symbol>
+      <symbol id="i-wheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3v6.5M12 14.5V21M3 12h6.5m5 0H21M5.65 5.65l4.6 4.6m3.5 3.5 4.6 4.6m0-12.7-4.6 4.6m-3.5 3.5-4.6 4.6"/></symbol>
+      <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v4a2 2 0 0 0 0 4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a2 2 0 0 0 0-4Z"/><path d="M15 5v2m0 3v4m0 3v2"/></symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13"/><path d="M12 8H7.5a2.5 2.5 0 1 1 2.4-3.2L12 8Zm0 0h4.5a2.5 2.5 0 1 0-2.4-3.2L12 8Z"/></symbol>
+      <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="m12 3 2.8 6.2L21 12l-6.2 2.8L12 21l-2.8-6.2L3 12l6.2-2.8L12 3Z"/></symbol>
+      <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3m-4 4 4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    </svg>
+
+    <div class="ambient ambient-peach" aria-hidden="true"></div>
+    <div class="ambient ambient-lilac" aria-hidden="true"></div>
+    <aside class="desktop-note" aria-hidden="true"><span class="note-tape"></span><svg class="icon"><use href="#i-heart"/></svg><p>今天的小确幸，<br />已经替你准备好。</p><span>with a little extra love.</span></aside>
+    <div class="desktop-postmark" aria-hidden="true"><span>JUST FOR YOU</span><svg class="icon"><use href="#i-heart"/></svg><span>EVERY SINGLE DAY</span></div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#wheel" aria-label="偏爱福利社，回到好运转盘"><span class="brand-mark"><svg class="icon"><use href="#i-heart"/></svg></span><span>偏爱福利社<small>THE LITTLE LOVE CLUB</small></span></a>
+        <button id="share-open" class="icon-button" type="button" aria-label="分享给宝宝" title="分享给宝宝"><svg class="icon"><use href="#i-share"/></svg></button>
+      </header>
+
+      <div id="storage-alert" class="storage-alert" role="alert" hidden><svg class="icon"><use href="#i-info"/></svg><div><strong>奖券记录暂时无法保存</strong><p id="storage-alert-text">请保留浏览器数据，允许网站存储后刷新重试。</p><button id="storage-retry" type="button">重新检查</button></div></div>
+
+      <main id="main-content">
+        <section id="view-wheel" class="page-view" aria-labelledby="wheel-heading">
+          <div class="hero">
+            <span class="eyebrow"><svg class="icon"><use href="#i-sparkle"/></svg> 宝宝的专属小惊喜</span>
+            <h1 id="wheel-heading">今天也<span class="love-underline">偏爱你<svg class="hero-heart" viewBox="0 0 34 32" aria-hidden="true"><path d="M17 28S2 20 3 10C4 1 14 1 17 8 20 1 30 1 31 10c1 10-14 18-14 18Z"/></svg></span></h1>
+            <p>好运归你，兑现归我。</p>
+          </div>
+
+          <div class="wheel-section">
+            <span class="wheel-doodle doodle-left" aria-hidden="true">✧</span><span class="wheel-doodle doodle-right" aria-hidden="true">✧</span>
+            <div id="wheel-stage" class="wheel-stage" aria-label="九格好运转盘">
+              <svg id="wheel-svg" viewBox="0 0 400 400" aria-hidden="true"></svg>
+              <svg class="wheel-pointer" viewBox="0 0 46 59" aria-hidden="true"><path d="M4 22a19 19 0 1 1 38 0c0 9-11 24-19 34C15 46 4 31 4 22Z" fill="#b84e52"/><path d="M7 20a16 16 0 1 1 32 0c0 8-9 21-16 30C16 41 7 28 7 20Z" fill="#dd7677"/><path d="M23 30S12 24 12 17a6 6 0 0 1 11-3 6 6 0 0 1 11 3c0 7-11 13-11 13Z" fill="#fff7e8"/></svg>
+              <button id="spin-button" class="wheel-start" type="button" aria-label="开始抽奖" disabled><span id="spin-label">开始</span><small id="spin-sublabel">接住好运</small></button>
+            </div>
+          </div>
+
+          <p id="wheel-hint" class="wheel-hint">转一转，再亲手刮开你的惊喜</p>
+          <button id="pending-button" class="button button-primary pending-button" type="button" hidden><svg class="icon"><use href="#i-sparkle"/></svg>继续刮开这份惊喜<svg class="icon"><use href="#i-arrow"/></svg></button>
+
+          <div id="wheel-legend" class="wheel-legend" aria-label="各区域的单次抽取概率"></div>
+          <p class="legend-note">扇区大小对应单次概率，含 30% 谢谢惠顾。</p>
+          <button id="prize-teaser" class="teaser-card" type="button"><span class="teaser-icon">🎀</span><span><strong>48 种奖品 + 谢谢惠顾</strong><small>70% 中奖 · 30% 谢谢惠顾</small></span><svg class="icon"><use href="#i-arrow"/></svg></button>
+          <p class="local-note"><svg class="icon"><use href="#i-ticket"/></svg>奖券保存在当前浏览器，建议保存图片。</p>
+        </section>
+
+        <section id="view-tickets" class="page-view" aria-labelledby="tickets-heading" hidden>
+          <div class="page-heading"><span class="eyebrow">POCKETFUL OF LOVE</span><h1 id="tickets-heading" tabindex="-1">我的奖券</h1><p>把小小的好运，收进自己的口袋。</p></div>
+          <div id="ticket-summary" class="ticket-summary"></div>
+          <div class="ticket-filters" role="group" aria-label="筛选奖券"><button type="button" data-filter="all" aria-pressed="true">全部</button><button type="button" data-filter="available" aria-pressed="false">待兑现</button><button type="button" data-filter="redeemed" aria-pressed="false">已兑现</button></div>
+          <div id="ticket-list" class="ticket-list"></div>
+          <p class="local-note"><svg class="icon"><use href="#i-ticket"/></svg>奖券保存在当前浏览器，建议保存图片。</p>
+        </section>
+
+        <section id="view-prizes" class="page-view" aria-labelledby="prizes-heading" hidden>
+          <div class="page-heading"><span class="eyebrow">A LITTLE SOMETHING FOR YOU</span><h1 id="prizes-heading" tabindex="-1">偏爱奖品清单</h1><p>吃点甜的、一起出门，或认真陪着你。</p></div>
+          <div class="prize-intro"><svg class="icon"><use href="#i-heart"/></svg><span><strong id="prize-count-title">48 种奖品 + 谢谢惠顾</strong><small id="prize-intro-copy">9 个区域 · 49 种结果</small></span><span class="mini-stamp"><span id="winning-probability">70%</span><small>中奖</small></span></div>
+          <section class="probability-plan" aria-labelledby="probability-plan-title"><h2 id="probability-plan-title">把日常的小快乐，多放一点</h2><p id="probability-plan-copy">单次中奖概率为 70%，「谢谢惠顾」为 30%。每种结果的概率都写在下面。</p><p id="grand-probability-note" class="probability-plan-note">隐藏大奖单次合计 1.4%。每次独立抽取，可能抽到重复奖品。</p></section>
+          <div id="prize-list" class="prize-list"></div>
+          <details class="rules"><summary>抽奖规则与概率<span aria-hidden="true">＋</span></summary><div><p>每次先转转盘，再刮开卡片，两步共同揭晓一个结果。刮开当前结果后，就可以继续抽取下一次。</p><p>9 个区域按标注的概率抽取，合计为 100%，扇区大小与概率对应。48 种真实奖品合计占 70%，「谢谢惠顾」占 30%；每个条目旁边标注的也是单次总概率。隐藏大奖的 1.4% 是该区域全部奖品的合计概率。</p><p>「谢谢惠顾」表示这次未中奖，不发放奖券，也无需兑现。每次独立抽取，可能抽到重复结果。已经抽到的奖券照常有效，新抽奖使用当前显示的概率。</p><p>奖券不设过期时间，兑现时间一起商量。奖品由你的男朋友兑现，网页负责记录这份小约定。</p><p>奖券保存在当前浏览器，不会跨手机或浏览器同步。换设备或清理浏览器数据可能丢失记录，建议将奖券保存为图片。</p></div></details>
+          <p class="closing-note">每一格里，都放了一点喜欢。<svg class="icon"><use href="#i-heart"/></svg></p>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="主要导航"><button type="button" data-view="wheel" aria-current="page"><svg class="icon"><use href="#i-wheel"/></svg><span>好运转盘</span></button><button type="button" data-view="tickets"><svg class="icon"><use href="#i-ticket"/></svg><span>我的奖券</span><span id="ticket-nav-count" class="nav-count" hidden>0</span></button><button type="button" data-view="prizes"><svg class="icon"><use href="#i-gift"/></svg><span>奖品清单</span></button></nav>
+    </div>
+
+    <dialog id="app-dialog" class="app-dialog" aria-labelledby="dialog-heading"><button id="dialog-close" class="icon-button dialog-close" type="button" aria-label="关闭弹窗"><svg class="icon"><use href="#i-close"/></svg></button><div id="dialog-content"></div></dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="screenreader-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <noscript><div class="noscript-message">这份小惊喜需要启用浏览器 JavaScript 才能运行。请使用手机浏览器打开，并允许网页运行脚本。</div></noscript>
+  </body>
+</html>
