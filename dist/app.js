@@ -1,4 +1,4 @@
-import { CATEGORIES, PRIZE_COUNT, OUTCOME_COUNT, TOTAL_WEIGHT, STORAGE_KEY, formatProbability, getWheelSegments, isNoPrize, createInitialState, loadState, saveState, getPendingTicket, drawTicket, revealTicket, redeemTicket } from './core.js';
+import { CATEGORIES, PRIZE_COUNT, OUTCOME_COUNT, STORAGE_KEY, getWheelSegments, isNoPrize, createInitialState, loadState, saveState, getPendingTicket, drawTicket, revealTicket, redeemTicket } from './core.js';
 import { buildShareUrl, createQrSvgDataUrl } from './share.js';
 
 const $ = selector => document.querySelector(selector);
@@ -194,7 +194,7 @@ function drawWheel() {
     const swatch = element('span', 'legend-swatch');
     swatch.style.backgroundColor = category.color;
     swatch.setAttribute('aria-hidden', 'true');
-    item.append(swatch, element('span', '', category.title), element('strong', '', formatProbability(category.weight)));
+    item.append(swatch, element('span', '', category.title));
     return item;
   }));
 }
@@ -362,18 +362,10 @@ function renderTickets() {
 
 function renderPrizes() {
   const list = $('#prize-list');
-  const noPrizeWeight = CATEGORIES.find(category => category.id === 'thanks').weight;
-  const winningProbability = formatProbability(TOTAL_WEIGHT - noPrizeWeight);
-  const noPrizeProbability = formatProbability(noPrizeWeight);
   $('#prize-teaser strong').textContent = `${PRIZE_COUNT} 种奖品 + 谢谢惠顾`;
-  $('#prize-teaser small').textContent = `${winningProbability} 中奖 · ${noPrizeProbability} 谢谢惠顾`;
+  $('#prize-teaser small').textContent = '奶茶、约会和更多小惊喜';
   $('#prize-count-title').textContent = `${PRIZE_COUNT} 种奖品 + 谢谢惠顾`;
   $('#prize-intro-copy').textContent = `${CATEGORIES.length} 个区域 · ${OUTCOME_COUNT} 种结果`;
-  $('#winning-probability').textContent = winningProbability;
-  const grandWeight = CATEGORIES.find(category => category.id === 'grand').weight;
-  const everydayWeight = CATEGORIES.filter(category => ['sweet', 'snack', 'care', 'company'].includes(category.id)).reduce((sum, category) => sum + category.weight, 0);
-  $('#probability-plan-copy').textContent = `吃喝、贴心服务和专属陪伴合计 ${formatProbability(everydayWeight)}，约会与浪漫也藏在转盘里。单次中奖概率为 ${winningProbability}，「谢谢惠顾」为 ${noPrizeProbability}。每种结果的概率都写在下面。`;
-  $('#grand-probability-note').textContent = `隐藏大奖单次合计 ${formatProbability(grandWeight)}。每次独立抽取，可能抽到重复奖品。`;
   list.replaceChildren();
   for (const category of CATEGORIES) {
     const group = element('article', 'prize-group');
@@ -382,13 +374,11 @@ function renderPrizes() {
     const heading = element('div', 'prize-group-heading');
     const emoji = element('span', '', category.icon);
     emoji.setAttribute('aria-hidden', 'true');
-    heading.append(emoji, element('h2', '', category.title), element('small', '', `合计 ${formatProbability(category.weight)}`));
+    heading.append(emoji, element('h2', '', category.title));
     const entries = element('div', 'prize-entries');
     for (const prize of category.prizes) {
       const entry = element('div', 'prize-entry');
-      const titleLine = element('div', 'prize-entry-heading');
-      titleLine.append(element('h3', '', prize.title), element('span', 'prize-probability', `单次 ${formatProbability(prize.weight)}`));
-      entry.append(titleLine, element('p', '', prize.detail));
+      entry.append(element('h3', '', prize.title), element('p', '', prize.detail));
       entries.append(entry);
     }
     group.append(heading, entries);

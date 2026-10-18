@@ -11,9 +11,9 @@
     <meta property="og:description" content="小小的好运，已经为你准备好了。转一转，亲手刮开一份小小的偏爱。" />
     <meta property="og:type" content="website" />
     <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20261018-1" />
     <title>今天也偏爱你 · 宝宝的专属好运</title>
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=20261018-1"></script>
   </head>
   <body>
     <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -64,9 +64,9 @@
           <p id="wheel-hint" class="wheel-hint">转一转，再亲手刮开你的惊喜</p>
           <button id="pending-button" class="button button-primary pending-button" type="button" hidden><svg class="icon"><use href="#i-sparkle"/></svg>继续刮开这份惊喜<svg class="icon"><use href="#i-arrow"/></svg></button>
 
-          <div id="wheel-legend" class="wheel-legend" aria-label="各区域的单次抽取概率"></div>
-          <p class="legend-note">扇区大小对应单次概率，含 30% 谢谢惠顾。</p>
-          <button id="prize-teaser" class="teaser-card" type="button"><span class="teaser-icon">🎀</span><span><strong>48 种奖品 + 谢谢惠顾</strong><small>70% 中奖 · 30% 谢谢惠顾</small></span><svg class="icon"><use href="#i-arrow"/></svg></button>
+          <div id="wheel-legend" class="wheel-legend" aria-label="转盘内容"></div>
+          <p class="legend-note">甜蜜、陪伴和小小的惊喜，都藏在转盘里。</p>
+          <button id="prize-teaser" class="teaser-card" type="button"><span class="teaser-icon">🎀</span><span><strong>48 种奖品 + 谢谢惠顾</strong><small>奶茶、约会和更多小惊喜</small></span><svg class="icon"><use href="#i-arrow"/></svg></button>
           <p class="local-note"><svg class="icon"><use href="#i-ticket"/></svg>奖券保存在当前浏览器，建议保存图片。</p>
         </section>
 
@@ -80,10 +80,10 @@
 
         <section id="view-prizes" class="page-view" aria-labelledby="prizes-heading" hidden>
           <div class="page-heading"><span class="eyebrow">A LITTLE SOMETHING FOR YOU</span><h1 id="prizes-heading" tabindex="-1">偏爱奖品清单</h1><p>吃点甜的、一起出门，或认真陪着你。</p></div>
-          <div class="prize-intro"><svg class="icon"><use href="#i-heart"/></svg><span><strong id="prize-count-title">48 种奖品 + 谢谢惠顾</strong><small id="prize-intro-copy">9 个区域 · 49 种结果</small></span><span class="mini-stamp"><span id="winning-probability">70%</span><small>中奖</small></span></div>
-          <section class="probability-plan" aria-labelledby="probability-plan-title"><h2 id="probability-plan-title">把日常的小快乐，多放一点</h2><p id="probability-plan-copy">单次中奖概率为 70%，「谢谢惠顾」为 30%。每种结果的概率都写在下面。</p><p id="grand-probability-note" class="probability-plan-note">隐藏大奖单次合计 1.4%。每次独立抽取，可能抽到重复奖品。</p></section>
+          <div class="prize-intro"><svg class="icon"><use href="#i-heart"/></svg><span><strong id="prize-count-title">48 种奖品 + 谢谢惠顾</strong><small id="prize-intro-copy">9 个区域 · 49 种结果</small></span><span class="mini-stamp" aria-hidden="true">偏爱<small>限定</small></span></div>
+          <section class="prize-guide" aria-labelledby="prize-guide-title"><h2 id="prize-guide-title">抽到的惊喜，记得收好</h2><p>中奖后，奖券会自动收进「我的奖券」。你可以随时查看，也可以保存图片留作纪念。</p></section>
           <div id="prize-list" class="prize-list"></div>
-          <details class="rules"><summary>抽奖规则与概率<span aria-hidden="true">＋</span></summary><div><p>每次先转转盘，再刮开卡片，两步共同揭晓一个结果。刮开当前结果后，就可以继续抽取下一次。</p><p>9 个区域按标注的概率抽取，合计为 100%，扇区大小与概率对应。48 种真实奖品合计占 70%，「谢谢惠顾」占 30%；每个条目旁边标注的也是单次总概率。隐藏大奖的 1.4% 是该区域全部奖品的合计概率。</p><p>「谢谢惠顾」表示这次未中奖，不发放奖券，也无需兑现。每次独立抽取，可能抽到重复结果。已经抽到的奖券照常有效，新抽奖使用当前显示的概率。</p><p>奖券不设过期时间，兑现时间一起商量。奖品由你的男朋友兑现，网页负责记录这份小约定。</p><p>奖券保存在当前浏览器，不会跨手机或浏览器同步。换设备或清理浏览器数据可能丢失记录，建议将奖券保存为图片。</p></div></details>
+          <details class="rules"><summary>玩法与兑现说明<span aria-hidden="true">＋</span></summary><div><p>每次先转转盘，再刮开卡片，两步共同揭晓一个结果。刮开当前结果后，就可以继续抽取下一次。</p><p>结果包括 48 种奖品和「谢谢惠顾」。「谢谢惠顾」表示这次未中奖，不会生成奖券；想继续玩的话，可以再转一次。</p><p>每次随机抽取，可能重复抽到同样的结果。已经抽到的奖券照常有效。</p><p>奖券不设过期时间，兑现时间一起商量。奖品由你的男朋友兑现，网页负责记录这份小约定。</p><p>奖券保存在当前浏览器，不会跨手机或浏览器同步。换设备或清理浏览器数据可能丢失记录，建议将奖券保存为图片。</p></div></details>
           <p class="closing-note">每一格里，都放了一点喜欢。<svg class="icon"><use href="#i-heart"/></svg></p>
         </section>
       </main>
