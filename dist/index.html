@@ -6,14 +6,14 @@
     <meta name="theme-color" content="#fff9ef" />
     <meta name="color-scheme" content="light" />
     <meta name="robots" content="noindex,nofollow" />
-    <meta name="description" content="转一转，刮开一份只给你的惊喜。好运归你，兑现归我。" />
-    <meta property="og:title" content="今天也偏爱你 · 宝宝的专属好运" />
+    <meta name="description" content="转一转，刮开一份只给你的惊喜。" />
+    <meta property="og:title" content="专属好运转盘" />
     <meta property="og:description" content="小小的好运，已经为你准备好了。转一转，亲手刮开一份小小的偏爱。" />
     <meta property="og:type" content="website" />
     <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20261018-1" />
-    <title>今天也偏爱你 · 宝宝的专属好运</title>
-    <script type="module" src="./app.js?v=20261018-1"></script>
+    <link rel="stylesheet" href="./styles.css?v=mystery-20261018-1" />
+    <title>专属好运转盘</title>
+    <script type="module" src="./app.js?v=mystery-20261018-1"></script>
   </head>
   <body>
     <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -38,8 +38,8 @@
 
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#wheel" aria-label="偏爱福利社，回到好运转盘"><span class="brand-mark"><svg class="icon"><use href="#i-heart"/></svg></span><span>偏爱福利社<small>THE LITTLE LOVE CLUB</small></span></a>
-        <button id="share-open" class="icon-button" type="button" aria-label="分享给宝宝" title="分享给宝宝"><svg class="icon"><use href="#i-share"/></svg></button>
+        <a class="brand" href="#wheel" aria-label="回到好运转盘"><span class="brand-mark"><svg class="icon"><use href="#i-heart"/></svg></span><span><span id="brand-title">偏爱福利社</span><small>THE LITTLE LOVE CLUB</small></span></a>
+        <button id="share-open" class="icon-button" type="button" aria-label="分享好运" title="分享好运"><svg class="icon"><use href="#i-share"/></svg></button>
       </header>
 
       <div id="storage-alert" class="storage-alert" role="alert" hidden><svg class="icon"><use href="#i-info"/></svg><div><strong>奖券记录暂时无法保存</strong><p id="storage-alert-text">请保留浏览器数据，允许网站存储后刷新重试。</p><button id="storage-retry" type="button">重新检查</button></div></div>
@@ -47,14 +47,14 @@
       <main id="main-content">
         <section id="view-wheel" class="page-view" aria-labelledby="wheel-heading">
           <div class="hero">
-            <span class="eyebrow"><svg class="icon"><use href="#i-sparkle"/></svg> 宝宝的专属小惊喜</span>
-            <h1 id="wheel-heading">今天也<span class="love-underline">偏爱你<svg class="hero-heart" viewBox="0 0 34 32" aria-hidden="true"><path d="M17 28S2 20 3 10C4 1 14 1 17 8 20 1 30 1 31 10c1 10-14 18-14 18Z"/></svg></span></h1>
-            <p>好运归你，兑现归我。</p>
+            <span class="eyebrow"><svg class="icon"><use href="#i-sparkle"/></svg><span id="recipient-greeting">专属小惊喜</span></span>
+            <h1 id="wheel-heading"><span id="hero-prefix">今天也</span><span class="love-underline"><span id="hero-highlight">偏爱你</span><svg class="hero-heart" viewBox="0 0 34 32" aria-hidden="true"><path d="M17 28S2 20 3 10C4 1 14 1 17 8 20 1 30 1 31 10c1 10-14 18-14 18Z"/></svg></span></h1>
+            <p id="hero-subtitle">好运归你，兑现归我。</p>
           </div>
 
           <div class="wheel-section">
             <span class="wheel-doodle doodle-left" aria-hidden="true">✧</span><span class="wheel-doodle doodle-right" aria-hidden="true">✧</span>
-            <div id="wheel-stage" class="wheel-stage" aria-label="九格好运转盘">
+            <div id="wheel-stage" class="wheel-stage" aria-label="好运转盘">
               <svg id="wheel-svg" viewBox="0 0 400 400" aria-hidden="true"></svg>
               <svg class="wheel-pointer" viewBox="0 0 46 59" aria-hidden="true"><path d="M4 22a19 19 0 1 1 38 0c0 9-11 24-19 34C15 46 4 31 4 22Z" fill="#b84e52"/><path d="M7 20a16 16 0 1 1 32 0c0 8-9 21-16 30C16 41 7 28 7 20Z" fill="#dd7677"/><path d="M23 30S12 24 12 17a6 6 0 0 1 11-3 6 6 0 0 1 11 3c0 7-11 13-11 13Z" fill="#fff7e8"/></svg>
               <button id="spin-button" class="wheel-start" type="button" aria-label="开始抽奖" disabled><span id="spin-label">开始</span><small id="spin-sublabel">接住好运</small></button>
@@ -65,8 +65,8 @@
           <button id="pending-button" class="button button-primary pending-button" type="button" hidden><svg class="icon"><use href="#i-sparkle"/></svg>继续刮开这份惊喜<svg class="icon"><use href="#i-arrow"/></svg></button>
 
           <div id="wheel-legend" class="wheel-legend" aria-label="转盘内容"></div>
-          <p class="legend-note">甜蜜、陪伴和小小的惊喜，都藏在转盘里。</p>
-          <button id="prize-teaser" class="teaser-card" type="button"><span class="teaser-icon">🎀</span><span><strong>48 种奖品 + 谢谢惠顾</strong><small>奶茶、约会和更多小惊喜</small></span><svg class="icon"><use href="#i-arrow"/></svg></button>
+          <p id="legend-note" class="legend-note">甜蜜、陪伴和小小的惊喜，都藏在转盘里。</p>
+          <button id="prize-teaser" class="teaser-card" type="button"><span class="teaser-icon">🎀</span><span><strong>奖品与小惊喜</strong><small>奶茶、约会和更多小惊喜</small></span><svg class="icon"><use href="#i-arrow"/></svg></button>
           <p class="local-note"><svg class="icon"><use href="#i-ticket"/></svg>奖券保存在当前浏览器，建议保存图片。</p>
         </section>
 
@@ -80,10 +80,10 @@
 
         <section id="view-prizes" class="page-view" aria-labelledby="prizes-heading" hidden>
           <div class="page-heading"><span class="eyebrow">A LITTLE SOMETHING FOR YOU</span><h1 id="prizes-heading" tabindex="-1">偏爱奖品清单</h1><p>吃点甜的、一起出门，或认真陪着你。</p></div>
-          <div class="prize-intro"><svg class="icon"><use href="#i-heart"/></svg><span><strong id="prize-count-title">48 种奖品 + 谢谢惠顾</strong><small id="prize-intro-copy">9 个区域 · 49 种结果</small></span><span class="mini-stamp" aria-hidden="true">偏爱<small>限定</small></span></div>
-          <section class="prize-guide" aria-labelledby="prize-guide-title"><h2 id="prize-guide-title">抽到的惊喜，记得收好</h2><p>中奖后，奖券会自动收进「我的奖券」。你可以随时查看，也可以保存图片留作纪念。</p></section>
+          <div class="prize-intro"><svg class="icon"><use href="#i-heart"/></svg><span><strong id="prize-count-title">奖品与小惊喜</strong><small id="prize-intro-copy">小小的偏爱，等你揭晓</small></span><span class="mini-stamp" aria-hidden="true">偏爱<small>限定</small></span></div>
+          <section class="prize-guide" aria-labelledby="prize-guide-title"><h2 id="prize-guide-title">抽到的惊喜，记得收好</h2><p id="prize-guide-copy">中奖后，奖券会自动收进「我的奖券」。你可以随时查看，也可以保存图片留作纪念。</p></section>
           <div id="prize-list" class="prize-list"></div>
-          <details class="rules"><summary>玩法与兑现说明<span aria-hidden="true">＋</span></summary><div><p>每次先转转盘，再刮开卡片，两步共同揭晓一个结果。刮开当前结果后，就可以继续抽取下一次。</p><p>结果包括 48 种奖品和「谢谢惠顾」。「谢谢惠顾」表示这次未中奖，不会生成奖券；想继续玩的话，可以再转一次。</p><p>每次随机抽取，可能重复抽到同样的结果。已经抽到的奖券照常有效。</p><p>奖券不设过期时间，兑现时间一起商量。奖品由你的男朋友兑现，网页负责记录这份小约定。</p><p>奖券保存在当前浏览器，不会跨手机或浏览器同步。换设备或清理浏览器数据可能丢失记录，建议将奖券保存为图片。</p></div></details>
+          <details class="rules"><summary>玩法与兑现说明<span aria-hidden="true">＋</span></summary><div><p>每次先转转盘，再刮开卡片，两步共同揭晓一个结果。刮开当前结果后，就可以继续抽取下一次。</p><p id="rules-outcomes">转盘里放着认真准备的奖品，等你亲手揭晓。</p><p id="rules-blind" hidden>盲盒只展示封面和提示，刮开以后才会揭晓里面的礼物。</p><p>每次随机抽取，可能重复抽到同样的结果。已经抽到的奖券照常有效。</p><p>奖券不设过期时间，兑现时间一起商量。奖品由你的男朋友兑现，网页负责记录这份小约定。</p><p>奖券保存在当前浏览器，不会跨手机或浏览器同步。换设备或清理浏览器数据可能丢失记录，建议将奖券保存为图片。</p></div></details>
           <p class="closing-note">每一格里，都放了一点喜欢。<svg class="icon"><use href="#i-heart"/></svg></p>
         </section>
       </main>

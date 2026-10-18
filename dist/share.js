@@ -1,4 +1,4 @@
-import { qrcodegen } from './vendor/qrcodegen.js';
+import { qrcodegen } from './vendor/qrcodegen.js?v=mystery-20261018-1';
 
 /** Share the actual page: preserve its path and query, without an in-page tab hash. */
 export function buildShareUrl(href) {

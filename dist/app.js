@@ -1,10 +1,12 @@
-import { CATEGORIES, PRIZE_COUNT, OUTCOME_COUNT, STORAGE_KEY, getWheelSegments, isNoPrize, createInitialState, loadState, saveState, getPendingTicket, drawTicket, revealTicket, redeemTicket } from './core.js';
-import { buildShareUrl, createQrSvgDataUrl } from './share.js';
+import { SETTINGS, CATEGORIES, PRIZE_COUNT, OUTCOME_COUNT, BLIND_PRIZE_COUNT, ACTIVE_CATEGORY_COUNT, STORAGE_KEY, getWheelSegments, isNoPrize, createInitialState, loadState, saveState, getPendingTicket, drawTicket, revealTicket, redeemTicket } from './core.js?v=mystery-20261018-1';
+import { buildShareUrl, createQrSvgDataUrl } from './share.js?v=mystery-20261018-1';
 
 const $ = selector => document.querySelector(selector);
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const LOCK_NAME = `${STORAGE_KEY}:mutation`;
 const wheelSegments = getWheelSegments();
+const activeCategories = CATEGORIES.filter(category => category.weight > 0);
+const hasNoPrize = activeCategories.some(category => category.id === 'thanks');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const dialog = $('#app-dialog');
 const dialogContent = $('#dialog-content');
@@ -96,6 +98,24 @@ function dateLabel(value, withTime = false) {
 function ticketNumber(ticket) { return ticket.id.replace(/-/g, '').slice(0, 8).toUpperCase(); }
 function findTicket(id) { return state.tickets.find(ticket => ticket.id === id); }
 
+function applySettings() {
+  const pageTitle = `${SETTINGS.siteTitle} · ${SETTINGS.recipientName ? `${SETTINGS.recipientName}的` : ''}专属好运`;
+  document.title = pageTitle;
+  $('meta[property="og:title"]').content = pageTitle;
+  const description = `${SETTINGS.subtitle} 转一转，亲手刮开一份只给你的惊喜。`;
+  $('meta[name="description"]').content = description;
+  $('meta[property="og:description"]').content = description;
+  $('#brand-title').textContent = SETTINGS.siteTitle;
+  $('.brand').setAttribute('aria-label', `${SETTINGS.siteTitle}，回到好运转盘`);
+  $('#recipient-greeting').textContent = `${SETTINGS.recipientName || '你'}的专属小惊喜`;
+  $('#hero-prefix').textContent = SETTINGS.heroPrefix;
+  $('#hero-highlight').textContent = SETTINGS.heroHighlight;
+  $('#hero-subtitle').textContent = SETTINGS.subtitle;
+  $('#share-open').setAttribute('aria-label', `分享给${SETTINGS.recipientName || '她'}`);
+  $('#share-open').title = `分享给${SETTINGS.recipientName || '她'}`;
+  $('#wheel-stage').setAttribute('aria-label', `${ACTIVE_CATEGORY_COUNT} 个区域的好运转盘`);
+}
+
 class StorageProblem extends Error {}
 
 function storageFailure() {
@@ -156,6 +176,7 @@ function drawWheel() {
   }
   const rotor = svgElement('g', { id: 'wheel-rotor' });
   wheelSegments.forEach(segment => {
+    if (segment.weight <= 0 || segment.spanAngle <= 0) return;
     const category = CATEGORIES[segment.categoryIndex];
     // Sector angles come from the same integer weights used for the draw.
     const start = segment.startAngle * Math.PI / 180;
@@ -163,7 +184,8 @@ function drawWheel() {
     const radius = 167;
     const x1 = 200 + radius * Math.cos(start), y1 = 200 + radius * Math.sin(start);
     const x2 = 200 + radius * Math.cos(end), y2 = 200 + radius * Math.sin(end);
-    rotor.append(svgElement('path', { d: `M200 200 L${x1} ${y1} A${radius} ${radius} 0 ${segment.spanAngle > 180 ? 1 : 0} 1 ${x2} ${y2} Z`, fill: category.color, stroke: '#fff8ec', 'stroke-width': 1.5 }));
+    if (segment.spanAngle >= 360 - 1e-8) rotor.append(svgElement('circle', { cx: 200, cy: 200, r: radius, fill: category.color, stroke: '#fff8ec', 'stroke-width': 1.5 }));
+    else rotor.append(svgElement('path', { d: `M200 200 L${x1} ${y1} A${radius} ${radius} 0 ${segment.spanAngle > 180 ? 1 : 0} 1 ${x2} ${y2} Z`, fill: category.color, stroke: '#fff8ec', 'stroke-width': 1.5 }));
     const angle = segment.centerAngle * Math.PI / 180;
     const narrow = segment.spanAngle < 15;
     const labelRadius = narrow ? 137 : 117;
@@ -176,7 +198,9 @@ function drawWheel() {
       const emoji = svgElement('text', { x: 0, y: -22, 'text-anchor': 'middle', 'font-size': 25, 'font-family': 'Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif' });
       emoji.textContent = category.icon;
       const title = svgElement('text', { x: 0, 'text-anchor': 'middle', fill: '#755347', 'font-size': 16, 'font-weight': 600, 'letter-spacing': .6, 'font-family': '-apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, sans-serif' });
-      for (const [lineIndex, line] of [category.title.slice(0, 2), category.title.slice(2)].entries()) {
+      const titleCharacters = Array.from(category.title);
+      const labelLines = [titleCharacters.slice(0, 2).join(''), titleCharacters.length > 4 ? `${titleCharacters[2]}…` : titleCharacters.slice(2).join('')];
+      for (const [lineIndex, line] of labelLines.entries()) {
         const span = svgElement('tspan', { x: 0, y: 6 + lineIndex * 20 });
         span.textContent = line;
         title.append(span);
@@ -188,7 +212,7 @@ function drawWheel() {
   rotor.append(svgElement('circle', { cx: 200, cy: 200, r: 58, fill: '#fff5e4', stroke: '#c591782e', 'stroke-width': 1 }));
   svg.append(rotor);
   const legend = $('#wheel-legend');
-  legend.replaceChildren(...CATEGORIES.map(category => {
+  legend.replaceChildren(...activeCategories.map(category => {
     const item = element('div', 'wheel-legend-item');
     if (category.id === 'thanks') item.classList.add('legend-no-prize');
     const swatch = element('span', 'legend-swatch');
@@ -208,9 +232,10 @@ function renderState() {
   spin.disabled = storageBlocked || actionBusy || isSpinning;
   spin.setAttribute('aria-busy', String(actionBusy || isSpinning));
   $('#spin-label').textContent = isSpinning ? '转动中' : actionBusy ? '稍等' : pending ? '刮开' : '开始';
-  $('#spin-sublabel').textContent = isSpinning ? '偏爱正在靠近' : pending ? '继续揭晓' : '接住好运';
-  spin.setAttribute('aria-label', pending ? '继续刮开本次抽奖结果' : '开始抽奖');
-  $('#wheel-hint').textContent = isSpinning ? '嘘，看看这一次，偏爱会落在哪儿…' : pending ? '有一张惊喜还没刮开，接着玩吧' : '转一转，再亲手刮开你的惊喜';
+  $('#spin-sublabel').textContent = isSpinning ? '偏爱正在靠近' : pending?.blind ? '拆开盲盒' : pending ? '继续揭晓' : '接住好运';
+  spin.setAttribute('aria-label', pending?.blind ? '继续刮开这份盲盒' : pending ? '继续刮开本次抽奖结果' : '开始抽奖');
+  $('#wheel-hint').textContent = isSpinning ? '嘘，看看这一次，偏爱会落在哪儿…' : pending?.blind ? '有一份盲盒还封着，接着拆开吧' : pending ? '有一张惊喜还没刮开，接着玩吧' : '转一转，再亲手刮开你的惊喜';
+  $('#pending-button').replaceChildren(icon('sparkle'), document.createTextNode(pending?.blind ? '继续拆开这份盲盒' : '继续刮开这份惊喜'), icon('arrow'));
   $('#pending-button').hidden = !pending || isSpinning || actionBusy;
   $('#pending-button').disabled = storageBlocked;
   const unredeemed = state.tickets.filter(ticket => !isNoPrize(ticket) && ticket.status !== 'redeemed').length;
@@ -268,7 +293,7 @@ function spinToTicket(ticket) {
   const desired = ((-90 - segment.centerAngle) % 360 + 360) % 360;
   const current = ((wheelRotation % 360) + 360) % 360;
   wheelRotation += 4 * 360 + ((desired - current + 360) % 360);
-  const duration = reduceMotion.matches ? 0 : 3000;
+  const duration = reduceMotion.matches ? 0 : SETTINGS.spinSeconds * 1000;
   spinDeadline = Date.now() + duration;
   let done = false;
   let timer;
@@ -286,7 +311,7 @@ function spinToTicket(ticket) {
     isSpinning = false;
     finishSpin = null;
     renderState();
-    announce(`转盘停在${ticket.categoryTitle}，现在可以刮开惊喜了。`);
+    announce(ticket.blind ? '抽到一份封好的盲盒，现在可以刮开封条了。' : `转盘停在${ticket.categoryTitle}，现在可以刮开惊喜了。`);
     if (findTicket(ticket.id)) openTicket(ticket.id);
   };
   finishSpin = complete;
@@ -327,23 +352,25 @@ function renderTickets() {
   }
   for (const ticket of tickets) {
     const sealed = ticket.status === 'unrevealed';
+    const sealedBlind = sealed && ticket.blind;
     const redeemed = ticket.status === 'redeemed';
     const card = element('article', 'ticket-card');
+    if (sealedBlind) card.classList.add('sealed-blind-ticket');
     const body = element('div', 'ticket-body');
     const topline = element('div', 'ticket-topline');
-    const emoji = element('span', 'ticket-emoji', sealed ? '💌' : ticket.icon);
+    const emoji = element('span', 'ticket-emoji', sealedBlind ? '🎁' : sealed ? '💌' : ticket.icon);
     emoji.setAttribute('aria-hidden', 'true');
     const titles = element('div', 'ticket-title-group');
-    titles.append(element('span', 'ticket-category', ticket.categoryTitle), element('h2', '', sealed ? '一份惊喜，还没刮开' : ticket.title));
-    topline.append(emoji, titles, element('span', `ticket-status${redeemed ? ' is-redeemed' : ''}`, sealed ? '待刮开' : redeemed ? '已兑现' : '待兑现'));
-    body.append(topline, element('p', 'ticket-detail', sealed ? '已经替你留好啦，点击下方继续揭晓。' : ticket.detail));
+    titles.append(element('span', 'ticket-category', sealedBlind ? '惊喜盲盒' : ticket.categoryTitle), element('h2', '', sealedBlind ? ticket.blindLabel : sealed ? '一份惊喜，还没刮开' : ticket.title));
+    topline.append(emoji, titles, element('span', `ticket-status${redeemed ? ' is-redeemed' : ''}`, sealedBlind ? '未拆封' : sealed ? '待刮开' : redeemed ? '已兑现' : '待兑现'));
+    body.append(topline, element('p', 'ticket-detail', sealedBlind ? ticket.blindHint : sealed ? '已经替你留好啦，点击下方继续揭晓。' : ticket.detail));
     if (!sealed) body.append(element('p', 'ticket-note', ticket.note));
     const footer = element('div', 'ticket-footer');
     const meta = element('p', 'ticket-meta');
     meta.append(element('span', '', dateLabel(ticket.createdAt)), element('span', '', `NO. ${ticketNumber(ticket)}`));
     const actions = element('div', 'ticket-actions');
     if (sealed) {
-      const resume = makeButton(isSpinning ? '好运转动中…' : '继续刮开惊喜', 'button-soft', () => openTicket(ticket.id), 'sparkle');
+      const resume = makeButton(isSpinning ? '好运转动中…' : sealedBlind ? '继续拆开盲盒' : '继续刮开惊喜', 'button-soft', () => openTicket(ticket.id), sealedBlind ? 'gift' : 'sparkle');
       resume.disabled = storageBlocked || isSpinning;
       actions.append(resume);
     } else {
@@ -362,12 +389,21 @@ function renderTickets() {
 
 function renderPrizes() {
   const list = $('#prize-list');
-  $('#prize-teaser strong').textContent = `${PRIZE_COUNT} 种奖品 + 谢谢惠顾`;
-  $('#prize-teaser small').textContent = '奶茶、约会和更多小惊喜';
-  $('#prize-count-title').textContent = `${PRIZE_COUNT} 种奖品 + 谢谢惠顾`;
-  $('#prize-intro-copy').textContent = `${CATEGORIES.length} 个区域 · ${OUTCOME_COUNT} 种结果`;
+  const countTitle = `${PRIZE_COUNT} 种奖品${hasNoPrize ? ' + 谢谢惠顾' : ''}`;
+  $('#prize-teaser strong').textContent = countTitle;
+  $('#prize-teaser small').textContent = BLIND_PRIZE_COUNT ? `含 ${BLIND_PRIZE_COUNT} 份盲盒，刮开才知道` : '奶茶、约会和更多小惊喜';
+  $('#prize-count-title').textContent = countTitle;
+  $('#prize-intro-copy').textContent = `${ACTIVE_CATEGORY_COUNT} 个区域 · ${OUTCOME_COUNT} 种结果${BLIND_PRIZE_COUNT ? ` · 含 ${BLIND_PRIZE_COUNT} 份盲盒` : ''}`;
+  $('#legend-note').textContent = BLIND_PRIZE_COUNT ? '有些偏爱装进了盲盒，刮开才知道是什么。' : '甜蜜、陪伴和小小的惊喜，都藏在转盘里。';
+  $('#prize-guide-title').textContent = BLIND_PRIZE_COUNT ? '封好的心意，留一点悬念' : '抽到的惊喜，记得收好';
+  $('#prize-guide-copy').textContent = BLIND_PRIZE_COUNT ? '盲盒先看封面和提示，里面的礼物等你亲手刮开。揭晓后的奖券会收进「我的奖券」，也可以保存图片留作纪念。' : '中奖后，奖券会自动收进「我的奖券」。你可以随时查看，也可以保存图片留作纪念。';
+  $('#rules-outcomes').textContent = `转盘共有 ${ACTIVE_CATEGORY_COUNT} 个区域，包含 ${PRIZE_COUNT} 种奖品${hasNoPrize ? '和「谢谢惠顾」。「谢谢惠顾」表示这次未中奖，不会生成奖券；想继续玩的话，可以再转一次。' : '。抽中的奖券会保存在「我的奖券」。'}`;
+  $('#rules-blind').hidden = BLIND_PRIZE_COUNT === 0;
+  $('#rules-blind').textContent = `${PRIZE_COUNT} 种奖品中，有 ${BLIND_PRIZE_COUNT} 份是盲盒。清单只展示封面和提示，刮开以后才会揭晓里面的礼物。`;
   list.replaceChildren();
-  for (const category of CATEGORIES) {
+  for (const category of activeCategories) {
+    const enabledPrizes = category.prizes.filter(prize => prize.enabled && prize.weight > 0);
+    if (!enabledPrizes.length) continue;
     const group = element('article', 'prize-group');
     if (category.id === 'thanks') group.classList.add('is-no-prize');
     group.style.setProperty('--category-tint', `${category.color}80`);
@@ -376,9 +412,14 @@ function renderPrizes() {
     emoji.setAttribute('aria-hidden', 'true');
     heading.append(emoji, element('h2', '', category.title));
     const entries = element('div', 'prize-entries');
-    for (const prize of category.prizes) {
-      const entry = element('div', 'prize-entry');
-      entry.append(element('h3', '', prize.title), element('p', '', prize.detail));
+    for (const prize of enabledPrizes) {
+      const entry = element('div', `prize-entry${prize.blind ? ' blind-prize-entry' : ''}`);
+      if (prize.blind) {
+        const seal = element('span', 'blind-seal', '封盒待拆');
+        const cover = element('div', 'blind-prize-cover');
+        cover.append(icon('gift'), element('h3', '', prize.blindLabel), seal);
+        entry.append(cover, element('p', '', prize.blindHint));
+      } else entry.append(element('h3', '', prize.title), element('p', '', prize.detail));
       entries.append(entry);
     }
     group.append(heading, entries);
@@ -421,13 +462,16 @@ function openTicket(ticketId) {
   if (isSpinning && ticket.status === 'unrevealed') return;
   const revealed = ticket.status !== 'unrevealed';
   const noPrize = isNoPrize(ticket);
+  const blind = ticket.blind && !noPrize;
   const content = element('div');
-  if (!revealed) content.append(modalHeader('A LITTLE SURPRISE AWAITS', '结果已准备好', '请亲手刮开，看看这一次的结果。'));
+  if (!revealed && blind) content.append(modalHeader('A LITTLE MYSTERY, SEALED WITH LOVE', ticket.blindLabel, ticket.blindHint));
+  else if (!revealed) content.append(modalHeader('A LITTLE SURPRISE AWAITS', '结果已准备好', '请亲手刮开，看看这一次的结果。'));
   else if (noPrize) content.append(modalHeader('ANOTHER LITTLE MOMENT', '这次未中奖', '想继续玩的话，可以再转一次。'));
+  else if (blind) content.append(modalHeader('YOUR LITTLE MYSTERY, UNBOXED', '盲盒打开啦！', `给${SETTINGS.recipientName || '你'}的这份惊喜，终于藏不住了。`));
   else content.append(modalHeader('A LITTLE LOVE, JUST FOR YOU', '呀，是这份偏爱！', '这一份小小的心意，要认真送给你。'));
-  const card = element('div', `scratch-ticket${noPrize ? ' no-prize-card' : ''}`);
+  const card = element('div', `scratch-ticket${noPrize ? ' no-prize-card' : ''}${blind ? ' blind-box-card' : ''}`);
   const topline = element('div', 'scratch-topline');
-  topline.append(element('span', '', ticket.categoryTitle), element('span', '', noPrize ? 'LUCKY MOMENT' : 'LOVE COUPON'));
+  topline.append(element('span', '', blind && !revealed ? '惊喜盲盒' : ticket.categoryTitle), element('span', blind && !revealed ? 'blind-seal' : '', blind ? revealed ? 'MYSTERY UNBOXED' : '封盒待拆' : noPrize ? 'LUCKY MOMENT' : 'LOVE COUPON'));
   const shell = element('div', `scratch-shell${revealed ? ' is-revealed' : ''}`);
   const prize = element('div', 'scratch-content');
   prize.setAttribute('aria-hidden', String(!revealed));
@@ -438,13 +482,13 @@ function openTicket(ticketId) {
   let canvas;
   if (!revealed) {
     canvas = element('canvas', 'scratch-canvas');
-    canvas.setAttribute('aria-label', '用手指刮开惊喜，也可以使用下方的直接揭晓按钮。');
+    canvas.setAttribute('aria-label', blind ? '用手指刮开盲盒封条，也可以使用下方的直接拆开盲盒按钮。' : '用手指刮开惊喜，也可以使用下方的直接揭晓按钮。');
     canvas.setAttribute('role', 'img');
     shell.append(canvas);
   }
   card.append(topline, shell, element('div', 'scratch-bottomline', noPrize ? 'THANK YOU FOR PLAYING' : `NO. ${ticketNumber(ticket)}  ·  ONLY FOR YOU`));
   content.append(card);
-  const feedback = element('p', 'scratch-instruction', revealed ? noPrize ? '这次没有获得奖品，可以再转一次。' : '好运已收进「我的奖券」，随时都能回来看看。' : '用指尖涂一涂，让结果慢慢出现');
+  const feedback = element('p', 'scratch-instruction', revealed ? noPrize ? '这次没有获得奖品，可以再转一次。' : blind ? '盲盒里的心意，已经收进「我的奖券」。' : '好运已收进「我的奖券」，随时都能回来看看。' : blind ? '刮掉封条，把藏好的心意拆开' : '用指尖涂一涂，让结果慢慢出现');
   feedback.dataset.feedback = 'true';
   feedback.setAttribute('role', 'status');
   feedback.setAttribute('aria-live', 'polite');
@@ -466,16 +510,16 @@ function openTicket(ticketId) {
     actions.append(makeButton('收进我的奖券', 'button-primary', () => { closeModal(); navigate('tickets', true); }, 'ticket'), makeButton('保存奖券图片', 'button-secondary', () => openTicketImage(ticket.id), 'download'));
     content.append(actions, element('p', 'reward-footnote', ticket.status === 'redeemed' ? '这份偏爱已经兑现，快乐值得留个纪念。' : '兑现人：你的男朋友 · 兑现时间一起商量'));
   } else {
-    const direct = makeButton('直接揭晓', 'button-text scratch-direct', () => revealActiveTicket(ticket.id), 'sparkle');
+    const direct = makeButton(blind ? '直接拆开盲盒' : '直接揭晓', 'button-text scratch-direct', () => revealActiveTicket(ticket.id), blind ? 'gift' : 'sparkle');
     direct.dataset.revealButton = 'true';
     direct.dataset.gameWrite = 'true';
     direct.disabled = storageBlocked;
-    content.append(direct, element('p', 'reward-footnote', '关掉也没关系，这张惊喜会一直为你留着。'));
+    content.append(direct, element('p', 'reward-footnote', blind ? '关掉也没关系，这份盲盒会保持封好，等你回来。' : '关掉也没关系，这张惊喜会一直为你留着。'));
   }
   openModal('ticket', content, ticket.id);
   if (!revealed) {
     requestAnimationFrame(() => {
-      if (dialog.open && modalMode === 'ticket' && modalTicketId === ticket.id && canvas.isConnected) cleanupScratch = setupScratch(canvas, shell, feedback, () => revealActiveTicket(ticket.id));
+      if (dialog.open && modalMode === 'ticket' && modalTicketId === ticket.id && canvas.isConnected) cleanupScratch = setupScratch(canvas, shell, feedback, () => revealActiveTicket(ticket.id), blind);
     });
   }
 }
@@ -489,7 +533,7 @@ async function revealActiveTicket(ticketId) {
     await mutateGame(latest => revealTicket(latest, ticketId));
     const ticket = findTicket(ticketId);
     if (dialog.open && modalMode === 'ticket' && modalTicketId === ticketId) openTicket(ticketId);
-    announce(isNoPrize(ticket) ? `${ticket.title}。${ticket.detail}` : `恭喜获得${ticket.title}。${ticket.detail}`);
+    announce(isNoPrize(ticket) ? `${ticket.title}。${ticket.detail}` : ticket.blind ? `盲盒打开了，获得${ticket.title}。${ticket.detail}` : `恭喜获得${ticket.title}。${ticket.detail}`);
     return true;
   } catch (error) { handleActionError(error); return false; }
   finally {
@@ -499,10 +543,10 @@ async function revealActiveTicket(ticketId) {
   }
 }
 
-function setupScratch(canvas, shell, progress, onReveal) {
+function setupScratch(canvas, shell, progress, onReveal, blind = false) {
   const ctx = canvas.getContext('2d');
   if (!ctx) {
-    progress.textContent = '当前浏览器不支持刮卡，点「直接揭晓」也能接住好运。';
+    progress.textContent = blind ? '当前浏览器不支持刮卡，点「直接拆开盲盒」也能揭晓礼物。' : '当前浏览器不支持刮卡，点「直接揭晓」也能接住好运。';
     canvas.style.background = '#e4d8e8';
     return () => {};
   }
@@ -511,7 +555,8 @@ function setupScratch(canvas, shell, progress, onReveal) {
   let previousPoint = null;
   let revealing = false;
   let disposed = false;
-  let lastAnnounced = 0;
+  let lastStage = 0;
+  const revealThreshold = SETTINGS.scratchRevealPercent / 100;
   const strokes = [];
   const cols = 32, rows = 22, visited = new Uint8Array(cols * rows);
   let cleared = 0;
@@ -556,14 +601,14 @@ function setupScratch(canvas, shell, progress, onReveal) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#aa8b9d';
-    ctx.font = '32px Georgia, serif';
-    ctx.fillText('♡', width / 2, height / 2 - 39);
+    ctx.font = blind ? '32px "Apple Color Emoji", "Segoe UI Emoji", sans-serif' : '32px Georgia, serif';
+    ctx.fillText(blind ? '🎁' : '♡', width / 2, height / 2 - 39);
     ctx.fillStyle = '#8c6b80';
     ctx.font = '600 19px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillText('刮开这份小偏爱', width / 2, height / 2 + 5);
+    ctx.fillText(blind ? '刮开封条，拆开盲盒' : '刮开这份小偏爱', width / 2, height / 2 + 5);
     ctx.fillStyle = '#a08a9b';
     ctx.font = '9px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.fillText('SCRATCH FOR A LITTLE LOVE', width / 2, height / 2 + 35);
+    ctx.fillText(blind ? 'SEALED WITH A LITTLE LOVE' : 'SCRATCH FOR A LITTLE LOVE', width / 2, height / 2 + 35);
     for (const stroke of strokes) erase(stroke[0], stroke[1]);
     shell.dataset.ready = 'true';
   }
@@ -579,11 +624,14 @@ function setupScratch(canvas, shell, progress, onReveal) {
       if ((x - x1 - t * dx) ** 2 + (y - y1 - t * dy) ** 2 <= radius ** 2) { visited[index] = 1; cleared += 1; }
     }
     const fraction = cleared / visited.length;
-    const percent = Math.min(40, Math.floor(fraction * 100));
-    if (percent >= lastAnnounced + 10) { lastAnnounced = percent; progress.textContent = `已刮开 ${percent}%，惊喜就快出现啦`; }
-    if (fraction >= .4 && !revealing) {
+    const stage = Math.min(2, Math.floor(fraction / revealThreshold * 3));
+    if (stage > lastStage) {
+      lastStage = stage;
+      progress.textContent = stage === 1 ? blind ? '封条慢慢松开了，再刮一刮' : '惊喜露出一点点了，再刮一刮' : blind ? '盲盒就快打开啦…' : '再一点点，就能看见这份惊喜啦';
+    }
+    if (fraction >= revealThreshold && !revealing) {
       revealing = true;
-      progress.textContent = '惊喜正在打开…';
+      progress.textContent = blind ? '盲盒正在打开…' : '惊喜正在打开…';
       Promise.resolve(onReveal()).then(success => { if (!success && !disposed) revealing = false; });
     }
   }
@@ -704,76 +752,90 @@ function paintTicket(ticket) {
   if (!ctx) throw new Error('暂时无法生成图片，请用手机截图收好这张奖券。');
   const sans = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
   const serif = '"Noto Serif SC", "Songti SC", serif';
+  ctx.font = `26px ${sans}`;
+  const subtitleLines = wrappedLines(ctx, SETTINGS.subtitle, 820);
+  const headerExtra = Math.max(0, subtitleLines.length - 1) * 38;
+  ctx.font = `600 51px ${serif}`;
+  const titleLines = wrappedLines(ctx, ticket.title, 690);
+  ctx.font = `29px ${sans}`;
+  const detailLines = wrappedLines(ctx, ticket.detail, 665);
+  ctx.font = `24px ${sans}`;
+  const noteLines = wrappedLines(ctx, ticket.note, 665);
+  const titleY = 619 + headerExtra;
+  const detailY = titleY + titleLines.length * 71 + 18;
+  const noteY = detailY + detailLines.length * 49 + 34;
+  const dividerY = Math.max(951 + headerExtra, noteY + noteLines.length * 42 + 26);
+  // Custom prize text can be longer; extend the image without clipping the promise.
+  canvas.height = dividerY + 419;
   ctx.fillStyle = '#fff8eb';
-  ctx.fillRect(0, 0, 960, 1370);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#eeded06b';
-  for (let y = 16; y < 1370; y += 18) for (let x = 16; x < 960; x += 18) { ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI * 2); ctx.fill(); }
+  for (let y = 16; y < canvas.height; y += 18) for (let x = 16; x < canvas.width; x += 18) { ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI * 2); ctx.fill(); }
   ctx.textAlign = 'center';
   ctx.fillStyle = '#b27370';
   ctx.font = `22px ${sans}`;
   ctx.fillText('THE LITTLE LOVE CLUB', 480, 91);
   ctx.fillStyle = '#604239';
   ctx.font = `600 52px ${serif}`;
-  ctx.fillText('今天也偏爱你', 480, 165);
+  ctx.fillText(SETTINGS.siteTitle, 480, 165, 820);
   ctx.fillStyle = '#a68673';
   ctx.font = `26px ${sans}`;
-  ctx.fillText('好运归你，兑现归我。', 480, 220);
+  subtitleLines.forEach((line, index) => ctx.fillText(line, 480, 220 + index * 38));
   ctx.fillStyle = '#fffdfa';
-  drawRoundedRect(ctx, 70, 285, 820, 877, 33);
+  drawRoundedRect(ctx, 70, 285 + headerExtra, 820, dividerY - 74 - headerExtra, 33);
   ctx.fill();
   ctx.strokeStyle = '#dfc4af';
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.fillStyle = '#faeae2';
-  drawRoundedRect(ctx, 91, 307, 778, 90, 18);
+  drawRoundedRect(ctx, 91, 307 + headerExtra, 778, 90, 18);
   ctx.fill();
   ctx.textAlign = 'left';
   ctx.fillStyle = '#a06560';
   ctx.font = `600 25px ${sans}`;
-  ctx.fillText(ticket.categoryTitle, 121, 364);
+  ctx.fillText(ticket.categoryTitle, 121, 364 + headerExtra, 470);
   ctx.textAlign = 'right';
   ctx.font = `20px ${sans}`;
-  ctx.fillText('LOVE COUPON', 839, 364);
+  ctx.fillText('LOVE COUPON', 839, 364 + headerExtra);
   ctx.textAlign = 'center';
   ctx.font = '86px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
-  ctx.fillText(ticket.icon, 480, 526);
+  ctx.fillText(ticket.icon, 480, 526 + headerExtra);
   ctx.fillStyle = '#624239';
   ctx.font = `600 51px ${serif}`;
-  const titleLines = wrappedLines(ctx, ticket.title, 690);
-  let y = 619;
+  let y = titleY;
   for (const line of titleLines) { ctx.fillText(line, 480, y); y += 71; }
-  y += 18;
+  y = detailY;
   ctx.fillStyle = '#8b6a59';
   ctx.font = `29px ${sans}`;
-  for (const line of wrappedLines(ctx, ticket.detail, 665)) { ctx.fillText(line, 480, y); y += 49; }
-  y += 34;
+  for (const line of detailLines) { ctx.fillText(line, 480, y); y += 49; }
+  y = noteY;
   ctx.fillStyle = '#b18b76';
   ctx.font = `24px ${sans}`;
-  for (const line of wrappedLines(ctx, ticket.note, 665)) { ctx.fillText(line, 480, y); y += 42; }
+  for (const line of noteLines) { ctx.fillText(line, 480, y); y += 42; }
   ctx.strokeStyle = '#d8bda7';
   ctx.lineWidth = 2;
   ctx.setLineDash([9, 12]);
-  ctx.beginPath(); ctx.moveTo(70, 951); ctx.lineTo(890, 951); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(70, dividerY); ctx.lineTo(890, dividerY); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = '#fff8eb';
-  for (const x of [70, 890]) { ctx.beginPath(); ctx.arc(x, 951, 20, 0, Math.PI * 2); ctx.fill(); }
+  for (const x of [70, 890]) { ctx.beginPath(); ctx.arc(x, dividerY, 20, 0, Math.PI * 2); ctx.fill(); }
   ctx.fillStyle = ticket.status === 'redeemed' ? '#77916b' : '#b6686c';
   ctx.font = `600 26px ${sans}`;
-  ctx.fillText(ticket.status === 'redeemed' ? '已兑现 · 快乐已签收' : '待兑现 · 一份认真准备的偏爱', 480, 1012);
+  ctx.fillText(ticket.status === 'redeemed' ? '已兑现 · 快乐已签收' : '待兑现 · 一份认真准备的偏爱', 480, dividerY + 61);
   ctx.fillStyle = '#9f806c';
   ctx.font = `22px ${sans}`;
-  ctx.fillText(`中奖时间：${dateLabel(ticket.createdAt, true)}`, 480, 1064);
+  ctx.fillText(`中奖时间：${dateLabel(ticket.createdAt, true)}`, 480, dividerY + 113);
   ctx.font = `18px ${sans}`;
-  let idY = 1104;
+  let idY = dividerY + 153;
   for (const line of wrappedLines(ctx, `奖券编号：${ticket.id}`, 725)) { ctx.fillText(line, 480, idY); idY += 26; }
   ctx.fillStyle = '#a98972';
   ctx.font = `24px ${sans}`;
-  ctx.fillText('兑现人：你的男朋友', 480, 1231);
+  ctx.fillText('兑现人：你的男朋友', 480, dividerY + 280);
   ctx.font = `20px ${sans}`;
-  ctx.fillText('不设过期时间 · 兑现时间一起商量', 480, 1275);
+  ctx.fillText('不设过期时间 · 兑现时间一起商量', 480, dividerY + 324);
   ctx.fillStyle = '#c89087';
   ctx.font = `29px ${serif}`;
-  ctx.fillText('♡', 480, 1325);
+  ctx.fillText('♡', 480, dividerY + 374);
   return canvas;
 }
 
@@ -810,10 +872,10 @@ function openShare() {
     openModal('share', content);
     return;
   }
-  content.append(modalHeader('SEND A LITTLE LOVE', '把好运发给她', '复制链接发给宝宝，或者让她扫码打开。'));
+  content.append(modalHeader('SEND A LITTLE LOVE', '把好运发给她', `复制链接发给${SETTINGS.recipientName || '她'}，或者让她扫码打开。`));
   const qrWrap = element('div', 'share-qr-wrap');
   const qr = element('img', 'share-qr');
-  qr.alt = '扫码打开「今天也偏爱你」好运转盘';
+  qr.alt = `扫码打开「${SETTINGS.siteTitle}」好运转盘`;
   qr.width = 168;
   qr.height = 168;
   qr.addEventListener('error', () => { qrWrap.replaceChildren(element('p', 'share-qr-error', '二维码暂时没能加载，复制下方链接也可以打开。')); });
@@ -848,7 +910,7 @@ function openShare() {
   }, 'copy');
   actions.append(copy);
   if (navigator.share) actions.append(makeButton('通过手机分享', 'button-secondary', async () => {
-    try { await navigator.share({ title: '今天也偏爱你', text: '宝宝，小小的好运已经为你准备好了。', url: SHARE_URL }); }
+    try { await navigator.share({ title: SETTINGS.siteTitle, text: `${SETTINGS.recipientName ? `${SETTINGS.recipientName}，` : ''}小小的好运已经为你准备好了。`, url: SHARE_URL }); }
     catch (error) { if (error?.name !== 'AbortError') feedback.textContent = '也可以点「复制邀请链接」，手动发给她。'; }
   }, 'share'));
   content.append(qrWrap, label, input, actions, feedback);
@@ -939,6 +1001,7 @@ if (pageShareUrl) {
   document.head.append(socialUrl);
 }
 
+applySettings();
 drawWheel();
 renderPrizes();
 try { state = readFreshState(); } catch { /* The persistent error banner blocks mutations without deleting records. */ }
