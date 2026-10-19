@@ -45,7 +45,8 @@
         <p id="empty-state" class="empty-state" hidden>没有找到符合条件的奖品，试试换个关键词或分类。</p>
       </section>
     </div>
-    <section class="publish-panel" aria-labelledby="publish-heading"><div><span class="eyebrow">READY TO SHARE</span><h2 id="publish-heading">改好了，怎么更新给她？</h2><p>点击上方“导出网页 index.html”，在 GitHub 仓库 <b>love-wheel → dist</b> 中上传并替换同名文件，再提交更改。等待 Pages 发布后刷新原链接。</p><p>单文件已经包含样式、脚本、图标和二维码库，不需要一起上传配置 JSON。同目录旧脚本可以保留；后续内容请继续用本工具编辑并重新导出单文件。</p><p class="help-text">需要拆分文件时，可用多文件源码 ZIP：解压后将里面的内容上传到仓库已有的 dist 文件夹，避免再套一层 dist。切换回拆分方式时须上传整套文件。</p></div><button id="export-zip" class="button" type="button">导出多文件源码 ZIP</button></section>
+    <section class="publish-panel" aria-labelledby="publish-heading"><div><span class="eyebrow">READY TO SHARE</span><h2 id="publish-heading">改好了，怎么更新给她？</h2><p>可以导出网页手动上传，也可以在下面连接 GitHub 后直接发布。自动发布会把当前配置生成的完整首页提交到 <b>love-wheel / dist / index.html</b>。</p><p>Token 仅保存在当前页面内存中，不写入草稿或配置文件；刷新页面后需要重新输入。请只使用权限范围受限的 Fine-grained token。</p><p class="help-text">在线编辑器是公开网页，请仅在你信任的编辑器地址中输入 Token。发布前会要求确认，发布成功后还需等待 GitHub Pages 完成部署。</p></div><button id="export-zip" class="button" type="button">导出多文件源码 ZIP</button></section>
+    <section class="settings-panel" style="margin-top:16px" aria-labelledby="github-publish-heading"><div class="panel-heading"><span class="eyebrow">GITHUB PUBLISH</span><h2 id="github-publish-heading">一键发布到 GitHub</h2><p class="help-text">默认发布目标：bbtnoctrl/love-wheel · main · dist/index.html</p></div><div class="field-grid"><label class="field"><span>仓库所有者</span><input id="gh-owner" value="bbtnoctrl" autocomplete="off" /></label><label class="field"><span>仓库名称</span><input id="gh-repo" value="love-wheel" autocomplete="off" /></label><label class="field"><span>分支</span><input id="gh-branch" value="main" autocomplete="off" /></label><label class="field"><span>目标文件路径</span><input id="gh-path" value="dist/index.html" autocomplete="off" /></label></div><label class="field"><span>GitHub Fine-grained Personal Access Token</span><input id="gh-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…" /></label><p class="help-text">创建 Token 时仅选择仓库 <b>bbtnoctrl/love-wheel</b>，Repository permissions 设为 <b>Contents: Read and write</b>。不要把 Token 发给任何人或写进公开文件。</p><div class="field-grid"><button id="gh-clear-token" class="button" type="button">清除 Token</button><button id="gh-publish" class="button button-primary" type="button">发布当前配置</button></div><p id="gh-publish-status" class="help-text" role="status" aria-live="polite"></p></section>
     <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
   </main>
   <dialog id="preview-dialog" class="editor-dialog preview-dialog" aria-labelledby="preview-heading"><div class="dialog-top"><div><span class="eyebrow">PLAYER CARD PREVIEW</span><h2 id="preview-heading">她看到的奖品清单</h2></div><button class="close-button" data-close="preview-dialog" type="button" aria-label="关闭预览">×</button></div><p class="help-text">这里只预览奖品卡片内容，不模拟完整抽奖。盲盒只展示谜面和提示，概率和预算不会出现在玩家卡片中。</p><div id="preview-hero" class="preview-hero"></div><div id="preview-list"></div><div class="dialog-actions"><button class="button" data-close="preview-dialog" type="button">返回继续修改</button><button id="preview-export-html" class="button button-primary" type="button">导出网页 index.html</button></div><p id="preview-status" role="status" class="help-text"></p></dialog>
@@ -713,6 +714,110 @@ function buildZipBytes(files) {
       actionStatus('暂时无法预览：' + error.message, true);
     }
   }
+
+  // GitHub publishing: token exists only in this page's JS memory and is never persisted.
+  let githubTokenInMemory = '';
+  $('gh-token').addEventListener('input', event => { githubTokenInMemory = event.target.value.trim(); });
+  $('gh-clear-token').addEventListener('click', () => {
+    githubTokenInMemory = '';
+    $('gh-token').value = '';
+    $('gh-publish-status').textContent = 'Token 已从当前页面内存中清除。';
+  });
+  function encodeUtf8Base64(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+  async function githubRequest(url, token, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer ' + token,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(options.headers || {})
+      }
+    });
+    const raw = await response.text();
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch (_) { data = { message: raw }; }
+    if (!response.ok) {
+      const message = data?.message || ('HTTP ' + response.status);
+      if (response.status === 401) throw new Error('Token 无效或已过期，请重新创建。');
+      if (response.status === 403) throw new Error('权限不足或触发 API 限制。请确认 Token 对此仓库有 Contents: Read and write 权限。');
+      if (response.status === 404) throw new Error('找不到仓库或目标文件。请检查仓库名、分支、路径及 Token 的仓库访问范围。');
+      if (response.status === 409 || response.status === 422) throw new Error('GitHub 拒绝此次提交（' + message + '）。可能文件刚被其他操作更新，请刷新编辑器后重试。');
+      throw new Error(message);
+    }
+    return data;
+  }
+  $('gh-publish').addEventListener('click', async () => {
+    const button = $('gh-publish');
+    const status = $('gh-publish-status');
+    const token = githubTokenInMemory.trim();
+    const owner = $('gh-owner').value.trim();
+    const repo = $('gh-repo').value.trim();
+    const branch = $('gh-branch').value.trim();
+    const path = $('gh-path').value.trim().replace(/^\/+|\/+$/g, '');
+    if (!token) { status.textContent = '请先填写 GitHub Token。'; return; }
+    if (![owner, repo, branch, path].every(Boolean) || path.split('/').includes('..')) {
+      status.textContent = '请检查仓库所有者、仓库名、分支和文件路径。'; return;
+    }
+    let html;
+    try {
+      const config = validatedConfig();
+      const version = String(Date.now()) + '-' + (++exportSequence);
+      const files = createExportFiles(config, RUNTIME_FILES, version);
+      html = buildStandaloneHtml(files);
+    } catch (error) {
+      status.textContent = '配置校验或网页生成失败：' + error.message;
+      actionStatus('发布前检查失败：' + error.message, true);
+      return;
+    }
+    const destination = owner + '/' + repo + ' · ' + branch + ' · ' + path;
+    if (!window.confirm('确认把当前配置发布到：\n' + destination + '\n\n将覆盖该路径的 index.html，并在 GitHub 中留下提交记录。')) return;
+    button.disabled = true;
+    $('gh-clear-token').disabled = true;
+    status.textContent = '正在读取 GitHub 当前文件版本…';
+    try {
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      const base = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repo) + '/contents/' + encodedPath;
+      let current;
+      try {
+        current = await githubRequest(base + '?ref=' + encodeURIComponent(branch), token);
+      } catch (error) {
+        // Publishing is an update workflow; fail closed if the existing file cannot be read.
+        throw new Error('无法读取现有目标文件，因此没有提交任何内容。' + error.message);
+      }
+      if (!current || !current.sha) throw new Error('GitHub 未返回目标文件的 SHA，已取消发布。');
+      status.textContent = '已读取文件，正在提交新版本…';
+      const commitMessage = 'Update love wheel from visual editor (' + new Date().toISOString() + ')';
+      const result = await githubRequest(base, token, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: commitMessage,
+          content: encodeUtf8Base64(html),
+          sha: current.sha,
+          branch
+        })
+      });
+      const commitUrl = result?.commit?.html_url || '';
+      status.textContent = '提交成功！GitHub 已收到新版首页。Pages 通常需要等待一会儿完成部署。' + (commitUrl ? ' 提交记录：' + commitUrl : '');
+      actionStatus('新版已提交到 GitHub：' + destination + '。请等待 Pages 发布完成，再打开游戏链接检查。');
+      dirty = false;
+    } catch (error) {
+      status.textContent = '发布失败：' + error.message;
+      actionStatus('GitHub 发布失败：' + error.message, true);
+    } finally {
+      button.disabled = false;
+      $('gh-clear-token').disabled = false;
+    }
+  });
 
   $('settings-form').addEventListener('submit', event => event.preventDefault());
   document.querySelectorAll('[data-setting]').forEach(input => input.addEventListener('input', () => {
